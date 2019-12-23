@@ -1006,9 +1006,10 @@ dojo.declare("com.nuclearunicorn.game.EffectsManager", null, {
 				type: "perTick"
 			},
 
-			"heatMaxRatio": {
-				title: $I("effectsMgr.statics.heatMaxRatio.title"),
-				type: "ratio"
+			"heatMaxExpansion": {
+				title: $I("effectsMgr.statics.heatMaxExpansion.title"),
+				type: "fixed",
+				calculation: "nonProportional"
 			},
 
 			"voidResonance": {
@@ -1678,6 +1679,24 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
         };
 
 		this.saveImportDropboxText(data, callback);
+	},
+
+    saveToFile: function(withFullName) {
+        var $link = $('#download-link');
+
+        var data = JSON.stringify(this.save());
+        var lzdata = LZString.compressToBase64(data);
+        var blob = new Blob([lzdata], {type: 'text/plain'});
+        $link.attr('href', window.URL.createObjectURL(blob));
+
+        var filename = 'Kittens Game';
+        if (withFullName) {
+            filename += ' - Run ' + (this.stats.getStat('totalResets').val + 1)
+                + ' - ' + $I('calendar.year.full', [this.calendar.year, this.calendar.getCurSeasonTitle(), Math.floor(this.calendar.day)]);
+        }
+        $link.attr('download', filename + '.txt');
+
+        $link.get(0).dispatchEvent(new MouseEvent('click'));
 	},
 
 	saveExportDropbox: function(){
@@ -3266,11 +3285,11 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		var msg = $I("reset.prompt") + "\n\n";
 			msg += $I("reset.prompt.base");
 		if (this.resPool.get("kittens").value > 70){
-			msg += $I("reset.prompt.70");
+			msg += " " + $I("reset.prompt.70");
 		}else if (this.resPool.get("kittens").value > 60){
-			msg += $I("reset.prompt.60");
+			msg += " " + $I("reset.prompt.60");
 		}else if (this.resPool.get("kittens").value <= 35){
-			msg += $I("reset.prompt.35");
+			msg += " " + $I("reset.prompt.35");
 		}
         var game = this;
 
@@ -3564,8 +3583,14 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				tu: this.religion.filterMetadata(this.religion.transcendenceUpgrades, ["name", "val", "on", "unlocked"])
 			},
 			science: {
-				hideResearched: false,
-				techs: []
+				hideResearched: this.science.hideResearched,
+				techs: [],
+				policies: []
+			},
+			space: {
+				hideResearched: this.space.hideResearched,
+				programs: [],
+				planets: []
 			},
 			time: {
 				cfu: [{
@@ -3580,6 +3605,11 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				kittens: newKittens,
 				jobs: [],
 				traits: [],
+			},
+			workshop: {
+				hideResearched: this.workshop.hideResearched,
+				upgrades: [],
+				crafts: []
 			},
 			achievements: lsData.achievements,
 			stats: stats,
@@ -3810,7 +3840,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		if(this.resPool.get("paragon").value >= 100) {
 			gift = "Paragon";
 		}
-		if(this.resPool.get("timeCrystal").value && this.prestige.getPerk("anachronomancy").researched) {
+		if(this.resPool.get("timeCrystal").value && this.prestige.getPerk("anachronomancy").researched && this.workshop.get("stasisChambers").researched) {
 			gift = "TimeCrystal";
 		}
 		if(this.resPool.get("sorrow").value / this.resPool.get("sorrow").maxValue < 0.25 && this.prestige.getPerk("megalomania").researched && this.religion.getZU("blackPyramid").val < 3) {

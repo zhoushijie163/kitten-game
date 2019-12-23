@@ -20,11 +20,34 @@
 		<!-- friends don't let friends use AMD and require.js -->
 		<script src="lib/system.js"></script>
 
+        <!-- <script type="text/javascript" src="http://www.kongregate.com/javascripts/kongregate_api.js"></script> -->
+
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+			ga('create', 'UA-29812134-1', 'bloodrizer.ru');
+			ga('send', 'pageview');
+		</script>
+
 		<link rel="stylesheet" href="res/default.css?v=5" type="text/css">
 		<link rel="stylesheet" href="res/theme_dark.css?v=5" type="text/css">
         <link rel="stylesheet" href="res/theme_grassy.css?v=5" type="text/css">
 		<link rel="stylesheet" href="res/theme_sleek.css?v=5" type="text/css">
 
+		<script src="https://www.gstatic.com/firebasejs/3.6.4/firebase.js"></script>
+		<script>
+			var config = {
+				apiKey: "AIzaSyDAitgXAOdO-0SgRIEjTDj69fvDz4MCB1g",
+				authDomain: "kg-firebase.firebaseapp.com",
+				databaseURL: "https://kg-firebase.firebaseio.com",
+				storageBucket: "kg-firebase.appspot.com",
+				messagingSenderId: "660584803958"
+			};
+			firebase.initializeApp(config);
+		</script>
 
 		<script type="text/javascript">
 
@@ -168,6 +191,12 @@
 
 
 					var host = window.location.hostname;
+					if (host.indexOf("kongregate") > -1){
+						$.getScript("http://www.kongregate.com/javascripts/kongregate_api.js", function() {
+							console.log("loading Kongregate API...");
+							gamePage.initKongregateApi();
+						});
+					}
 					gamePage.isLocalhost = window.location.protocol == "file:" || host == "localhost" || host == "127.0.0.1";
 					if (gamePage.isLocalhost){
 						$("#devModeButton").show();
@@ -360,7 +389,7 @@
 						<div id="IRCChatInner">
 
 							<!--iframe-- src="https://kiwiirc.com/client/irc.canternet.org/?nick=kitten_?#kittensgame" style="border:0; width: 400px; height:800px;"></iframe-->
-							<!--<iframe src="https://kiwiirc.com/nextclient/?settings=98efrnr34rbd&nick=kitten_?" style="border:0; width: 400px; height:800px;"></iframe>-->
+							<iframe src="https://kiwiirc.com/nextclient/?settings=98efrnr34rbd&nick=kitten_?" style="border:0; width: 400px; height:800px;"></iframe>
 						</div>
 					</div>
 				</div>
@@ -482,6 +511,9 @@
 			<div id="exportDiv" style="display: none" class="dialog help">
 				<h1>Export To:</h1>
 				<input type="button" onclick="gamePage.saveExportDropbox();" value="Dropbox (Beta)">
+				<input type="button" onclick="gamePage.saveToFile(false);" value="File (simple name)">
+				<input type="button" onclick="gamePage.saveToFile(true);" value="File (full name)">
+				<a id="download-link" target="_blank" style="display: none"></a>
 				<br>
 				<h1>Text Export:</h1>
 				<br>
@@ -510,8 +542,8 @@
 				<span>Kittens Game Mobile has been released! Click on the link to follow:</span>
 				<br>
 				<br>
-				<!-- <a target="_blank" href="https://play.google.com/store/apps/details?id=com.nuclearunicorn.kittensgame&hl=en">Android</a>&nbsp;|&nbsp;
-				<a target="_blank" href="https://itunes.apple.com/us/app/kittens-game/id1198099725?mt=8">iOS</a> -->
+				<a target="_blank" href="https://play.google.com/store/apps/details?id=com.nuclearunicorn.kittensgame&hl=en">Android</a>&nbsp;|&nbsp;
+				<a target="_blank" href="https://itunes.apple.com/us/app/kittens-game/id1198099725?mt=8">iOS</a>
 				<br>
 				<br>
 				<br>
@@ -519,13 +551,13 @@
 			</div>
 
 			<div id="footerLinks" class="links-block">
-				<!-- <a href="http://www.reddit.com/r/kittensgame/" target="_blank">reddit</a> |
+				<a href="http://www.reddit.com/r/kittensgame/" target="_blank">reddit</a> |
 				<a href="http://bloodrizer.ru/games/kittens/wiki/" target="_blank">wiki</a> |
 				<a href="https://discord.gg/2arBf9K" target="_blank">discord</a> |
-				<a href="http://kittensgame.tumblr.com" target="_blank">tumblr</a> | 
-				<a href="#" onclick="$('#helpDiv').toggle();">help</a> |
+				<!-- <a href="http://kittensgame.tumblr.com" target="_blank">tumblr</a> | -->
+				<!-- <a href="#" onclick="$('#helpDiv').toggle();">help</a> | -->
 				<a href="#" onclick="$('#creditsDiv').toggle();">credits</a> |
-				<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=82FJX5M8M3GVN" target="_blank">donate</a> |
+				<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=82FJX5M8M3GVN" target="_blank">donate</a> <!-- |
 				<a href="classic/" target="_blank">classic</a> -->
 			</div>
 		</div>
