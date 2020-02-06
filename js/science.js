@@ -6,7 +6,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 
 	game: null,
 
-	hideResearched: false,	//hide researched techs
+	hideResearched: false,
 
 	//list of technologies
 	techs:[{
