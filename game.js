@@ -376,8 +376,8 @@ dojo.declare("com.nuclearunicorn.game.EffectsManager", null, {
 				type: "ratio"
 			},
 
-			"learnRatio" : {
-				title: $I("effectsMgr.statics.learnRatio.title"),
+			"skillXP" : {
+				title: $I("effectsMgr.statics.skillXP.title"),
 				type: "perTick"
 			},
 
@@ -911,7 +911,7 @@ dojo.declare("com.nuclearunicorn.game.EffectsManager", null, {
 
 			"gflopsConsumption" :  {
 				title: $I("effectsMgr.statics.gflopsConsumption.title"),
-				type: "fixed"
+				type: "perTick"
 			},
 
 			"hashrate" :  {
@@ -1015,6 +1015,11 @@ dojo.declare("com.nuclearunicorn.game.EffectsManager", null, {
 			"voidResonance": {
 				title: $I("effectsMgr.statics.voidResonance.title"),
 				type: "ratio"
+			},
+
+			"terraformingMaxKittensRatio": {
+				title: $I("effectsMgr.statics.terraformingMaxKittens.title"),
+				type: "ratio"
 			}
 		}
 	}
@@ -1083,6 +1088,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	forceShowLimits: false,
 	useWorkers: false,
 	colorScheme: "",
+	unlockedSchemes: null,
 
 	timer: null,
 	_mainTimer: null,	//main timer loop
@@ -1113,7 +1119,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	totalUpdateTimeCurrent : 0,
 
 	pauseTimestamp: 0, //time of last pause
-	
+
 	lastDateMessage: null,  //Stores the most recent date message to prevent header spam
 
 	effectsMgr: null,
@@ -1150,6 +1156,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			usePercentageResourceValues: false,
 			highlightUnavailable: true,
 			hideSell: false,
+			hideBGImage: false,
 			noConfirm: false,
 			IWSmelter: true,
 			disableCMBR: false,
@@ -1348,7 +1355,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	 */
 	msg: function(message, type, tag, noBullet){
 
-		var filters = dojo.clone(game.console.filters);
+		var filters = dojo.clone(this.console.filters);
 		if (tag && filters[tag]){
 			var filter = filters[tag];
 
@@ -1395,6 +1402,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this.forceShowLimits = false;
 		this.useWorkers = false;
 		this.colorScheme = "";
+		this.unlockedSchemes = this.ui.defaultSchemes;
 		this.karmaKittens = 0;
 		this.karmaZebras = 0;
 		this.ironWill = true;
@@ -1413,6 +1421,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			usePercentageResourceValues: false,
 			highlightUnavailable: true,
 			hideSell: false,
+			hideBGImage: false,
 			noConfirm: false,
 			IWSmelter: true,
 			disableCMBR: false,
@@ -1475,6 +1484,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			isCMBREnabled: this.isCMBREnabled,
 			useWorkers: this.useWorkers,
 			colorScheme: this.colorScheme,
+			unlockedSchemes: this.unlockedSchemes,
 			karmaKittens: this.karmaKittens,
 			karmaZebras: this.karmaZebras,
 			ironWill : this.ironWill,
@@ -1523,9 +1533,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	},
 
 	toggleScheme: function(){
-		var schemeToggle = dojo.byId("schemeToggle");
-		this.colorScheme = schemeToggle.value;
-
+		this.colorScheme = dojo.byId("schemeToggle").value;
 		this.updateOptionsUI();
 	},
 
@@ -1616,6 +1624,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			//something should really be done with this mess there
 			this.forceShowLimits = data.forceShowLimits ? data.forceShowLimits : false;
 			this.colorScheme = data.colorScheme ? data.colorScheme : null;
+			this.unlockedSchemes = data.unlockedSchemes ? data.unlockedSchemes : this.ui.defaultSchemes;
 
 			this.karmaKittens = (data.karmaKittens !== undefined) ? data.karmaKittens : 0;
 			this.karmaZebras = (data.karmaZebras !== undefined) ? data.karmaZebras : 0;
@@ -1642,7 +1651,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			|| this.resPool.get("kittens").unlocked
 			|| this.resPool.get("zebras").unlocked
 			|| this.time.getVSU("usedCryochambers").val > 0);
-		this.libraryTab.visible = (this.bld.get("library").on > 0);
+		this.libraryTab.visible = (this.bld.get("library").on > 0 || this.science.get("calendar").researched || this.science.get("chronophysics").researched);
 		this.workshopTab.visible = (this.bld.get("workshop").on > 0);
 		this.achievementTab.visible = (this.achievements.hasUnlocked());
 		this.statsTab.visible = (this.karmaKittens > 0 || this.science.get("math").researched);
@@ -2766,8 +2775,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		//for example, here kitten resources are calculated per effect, this logic could be unified
 
-		var maxKittens = this.getEffect("maxKittens");
-		this.village.maxKittens = maxKittens;
+		this.village.maxKittens = Math.floor(this.getEffect("maxKittens"));
 
 		this.village.update();
 		this.workshop.update();
@@ -3719,10 +3727,12 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				return this.religion.getTU(unlockId);
 			case "challenges":
 				return this.challenges.getChallenge(unlockId);
+			case "schemes":
+				return unlockId;
 		}
 	},
 
-	unlock: function(list){
+	unlock: function(list) {
 		for (var type in list) {
 			if (list[type].length == 0) {
 				return;
@@ -3898,9 +3908,9 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				} else {
 					var amt = 5;
 				}
-				var pre = this.religion.getFaithBonus();
+				var pre = this.religion.getApocryphaBonus();
 				this.religion.faithRatio += amt;
-				var post = this.religion.getFaithBonus();
+				var post = this.religion.getApocryphaBonus();
 				var apocryphaGained = (post-pre)*100;
 				var msg = "Apocrypha Bonus increased by " + this.getDisplayValueExt(apocryphaGained) + "%!";
 				break;

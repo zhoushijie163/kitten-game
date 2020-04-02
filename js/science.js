@@ -552,7 +552,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			tech: ["sattelites", "oilProcessing"],
 			tabs: ["space"],
-            upgrades: ["oilDistillation"]
+			upgrades: ["oilDistillation"]
 		}
 	}, {
         name: "oilProcessing",
@@ -900,7 +900,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 	}
 });
 
-dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunicorn.game.ui.BuildingResearchBtnController, {
+dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunicorn.game.ui.BuildingNotStackableBtnController, {
 
 	defaults: function() {
 		var result = this.inherited(arguments);

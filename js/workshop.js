@@ -2443,7 +2443,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 	}
 });
 
-dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearunicorn.game.ui.BuildingResearchBtnController, {
+dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearunicorn.game.ui.BuildingNotStackableBtnController, {
 
 	defaults: function() {
 		var result = this.inherited(arguments);

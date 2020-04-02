@@ -42,11 +42,11 @@ dojo.declare("com.nuclearunicorn.i18n.Lang", null, {
 			"fr": "French",
 			"cz": "Česky",
 			"pl": "Polskie"
-			
+
 		};
 	},
 
-	init: function(version){
+	init: function(timestamp){
 		var self = this;
 		if (navigator.globalization  !== undefined) {
 			var def = $.Deferred();
@@ -63,13 +63,13 @@ dojo.declare("com.nuclearunicorn.i18n.Lang", null, {
 					def.resolve();
 				}
 			);
-			return def.promise().then(function(){return self._init(version);});
+			return def.promise().then(function(){return self._init(timestamp);});
 		} else {
-			return this._init(version);
+			return this._init(timestamp);
 		}
 	},
 
-	_init: function(version) {
+	_init: function(timestamp) {
 		if (this._deffered) {
 			return this._deffered.promise();
 		}
@@ -96,14 +96,14 @@ dojo.declare("com.nuclearunicorn.i18n.Lang", null, {
 		var self = this;
 		this._deffered = $.Deferred();
 		// now we can try to load it
-		var defferedForDefaultLocale = $.getJSON( "res/i18n/"+this.fallbackLocale+".json?v=" + version);
+		var defferedForDefaultLocale = $.getJSON( "res/i18n/"+this.fallbackLocale+".json?_=" + timestamp);
 		defferedForDefaultLocale.fail(function(def, errMrs, err){
 			console.error("Couldn't load default locale '", self.fallbackLocale, "', error:", errMrs, ", details:", err);
 			self._deffered.reject("Couldn't load default locale");
 		});
 		var fallbackLocale = this.fallbackLocale;
 		if (this.language != fallbackLocale ) {
-			var defferedForUserLocale = $.getJSON( "res/i18n/"+lang+".json?v=" + version).fail(function(e){
+			var defferedForUserLocale = $.getJSON( "res/i18n/"+lang+".json?_=" + timestamp).fail(function(e){
 				console.error("Couldn't load user locale '" + lang + "', error:", e);
 			});
 
@@ -799,14 +799,14 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonController", null, {
 
 	refund: function(model){
 		if (!model.prices.length){
-			console.warn("unable to refund building, no prices specifed in metadata :O");
+			console.warn("unable to refund building, no prices specified in metadata :O");
 			return;
 		}
 		for( var i = 0; i < model.prices.length; i++){
 			var price = model.prices[i];
 
 			var res = this.game.resPool.get(price.name);
-			if (res.refundable) {
+			if (res.isRefundable(this.game)) {
 				this.game.resPool.addResEvent(price.name, price.val * model.refundPercentage);
 			} else {
 				// No refund at all
@@ -1367,7 +1367,7 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModernController", com.nuclearuni
 		}
 
 		var res = this.game.resPool.get(price.name);
-		if (res.craftable && res.name != "wood"){
+		if (res.craftable && res.name != "wood" && this.game.workshop.getCraft(price.name).unlocked){
 
 			var ratio = this.game.getResCraftRatio(res);
 			var amt = price.val - res.value;
@@ -1402,14 +1402,8 @@ ButtonModernHelper = {
 		// description
 		var descDiv = dojo.create("div", {
 			innerHTML: model.description,
-			className: "desc",
-			style: {
-				textAlign: "center",
-				width: "100%",
-				paddingTop: "4px",
-				fontSize: "15px",
-				color: "gray"
-		}}, tooltip);
+			className: "desc"
+		}, tooltip);
 
 		var prices = model.priceModels;
 		var effects = model.effectModels;
@@ -1484,8 +1478,8 @@ ButtonModernHelper = {
 				for (var k = 0; k < price.children[i].indent; ++k) {
 					compSpan.name.innerHTML = "&nbsp;&nbsp;&nbsp;" + compSpan.name.innerHTML;
 				}
-				compSpan.name.style.color = "gray";	//mark unrolled price component as raw
-
+				//mark unrolled price component as raw
+				compSpan.name.className = "rawRes";
 			}
 
 		}
@@ -1512,19 +1506,13 @@ ButtonModernHelper = {
 
 		//-----------------------------------------
 
-		for (var i =0; i < effectsList.length; i++){
+		for (var i =0; i < effectsList.length; i++) {
 			var effectModel = effectsList[i];
 			var nameSpan = dojo.create("div", {
 				innerHTML: effectModel.displayEffectName + ": " + effectModel.displayEffectValue,
-					className: "effectName",
-					style: {
-						fontSize: "14px",
-						color: "gray"
-					}
-				}, tooltip );
-
+				className: "effectName"
+			}, tooltip);
 		}
-
 	}
 };
 
@@ -2107,6 +2095,10 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingStackableBtnController", com.nu
 				this.game.unlock(meta.unlocks);
 			}
 
+			if (meta.unlockScheme && meta.val >= meta.unlockScheme.threshold) {
+				this.game.ui.unlockScheme(meta.unlockScheme.name);
+			}
+
 			if (meta.upgrades) {
 				if (meta.updateEffects) {
 					meta.updateEffects(meta, this.game);
@@ -2139,7 +2131,7 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingStackableBtn", com.nuclearunico
 
 });
 
-dojo.declare("com.nuclearunicorn.game.ui.BuildingResearchBtnController", com.nuclearunicorn.game.ui.BuildingBtnController, {
+dojo.declare("com.nuclearunicorn.game.ui.BuildingNotStackableBtnController", com.nuclearunicorn.game.ui.BuildingBtnController, {
 
 	getDescription: function(model){
 		var meta = model.metadata;

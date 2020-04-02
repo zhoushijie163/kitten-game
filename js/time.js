@@ -20,15 +20,26 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 		this.setEffectsCachedExisting();
     },
 
-    save: function(saveData){
-       saveData["time"] = {
-           timestamp: this.game.pauseTimestamp || Date.now(),
-           flux: this.flux,
-           heat: this.heat,
-           isAccelerated: this.isAccelerated,
-           cfu: this.filterMetadata(this.chronoforgeUpgrades, ["name", "val", "on", "heat", "unlocked"]),
-           vsu: this.filterMetadata(this.voidspaceUpgrades, ["name", "val", "on"])
-       };
+    save: function(saveData) {
+        saveData.time = {
+            timestamp: this.game.pauseTimestamp || Date.now(),
+            flux: this.flux,
+            heat: this.heat,
+            isAccelerated: this.isAccelerated,
+            cfu: this.filterMetadata(this.chronoforgeUpgrades, ["name", "val", "on", "heat", "unlocked"]),
+            vsu: this.filterMetadata(this.voidspaceUpgrades, ["name", "val", "on"])
+        };
+        this._forceChronoFurnaceStop(saveData.time.cfu);
+    },
+
+    _forceChronoFurnaceStop: function(cfuSave) {
+        for (var i = 0; i < cfuSave.length; i++) {
+            var upgrade = cfuSave[i];
+            if (upgrade.name == "blastFurnace") {
+                upgrade.isAutomationEnabled = false;
+                return;
+            }
+        }
     },
 
     load: function(saveData){
@@ -465,9 +476,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
         var routeSpeed = game.getEffect("routeSpeed") || 1;
         var shatterTCGain = game.getEffect("shatterTCGain") * (1 + game.getEffect("rrRatio"));
-        var resonance = game.getEffect("voidResonance");
-        var triggerOotV = resonance && game.prestige.getPerk("voidOrder").researched;
-        var faithBonus = 1 + game.religion.getFaithBonus() * 0.25;	//25% of the apocrypha bonus
+        var triggersOrderOfTheVoid = game.getEffect("voidResonance") > 0;
 
         var daysPerYear = cal.daysPerSeason * cal.seasonsPerYear;
         var remainingDaysInFirstYear = cal.daysPerSeason * (cal.seasonsPerYear - cal.season) - cal.day;
@@ -490,19 +499,12 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
             if (shatterTCGain > 0) {
                 for (var j = 0; j < game.resPool.resources.length; j++) {
                     var resName = game.resPool.resources[j].name;
-                    var valueAdd = game.getResourcePerTick(resName, true) * remainingTicksInCurrentYear * shatterTCGain;
-                    if (resName == "faith") {
-                        valueAdd *= Math.sqrt(this.game.getEffect("voidResonance") / 1000);
-                    }
-                    game.resPool.addResEvent(resName, valueAdd);
-                    //if (resName == "faith") console.log(100 * Math.sqrt(this.game.getEffect("voidResonance") / 1000), "% of total ", game.getResourcePerTick(resName, true) * remainingTicksInCurrentYear * shatterTCGain);
+                    game.resPool.addResEvent(resName, game.getResourcePerTick(resName, true) * remainingTicksInCurrentYear * shatterTCGain);
                 }
             }
 
-            if (triggerOotV) {
-                var orderBonus = remainingTicksInCurrentYear * game.calcResourcePerTick("faith") * 0.1 * (1 + resonance);	//10% of faith transfer per priest
-                game.religion.faith += orderBonus * faithBonus;	//25% of the apocrypha bonus
-                game.resPool.addResEvent("faith", -orderBonus);
+            if (triggersOrderOfTheVoid) {
+                game.religion.triggerOrderOfTheVoid(remainingTicksInCurrentYear);
             }
 
             // Calendar
