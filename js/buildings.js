@@ -307,11 +307,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"catnipPerTickBase": 0.125
 		},
-		flavor : $I("buildings.field.flavor"),
-		unlockScheme: {
-			name: "grassy",
-			threshold: 42
-		}
+		flavor : $I("buildings.field.flavor")
 	},
 	{
 		name: "pasture",
@@ -1672,10 +1668,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			};
 			effects["cultureMaxRatio"] = 0.08 + game.getEffect("cultureMaxRatioBonus");
 			self.effects = effects;
-		},
-		unlockScheme: {
-			name: "sleek",
-			threshold: 8
 		}
 	},{
 		name: "chronosphere",
@@ -1722,7 +1714,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			buildings: ["library"]
 		},
 		// TODO Actually "action" is almost always just updating effects (unclear from the name), better separate the 2 concerns: update effects (can be done several times per tick) and perform specific action (only once per tick!)
-		// TODO Separation of concerns currently done only for AI Core and Time Boilers (REQUIRED by non-proportional effect!), will be systematized later
+		// TODO Separation of concerns currently done only for AI Core, Time Boilers and Hydroponics (REQUIRED by non-proportional effect!), will be systematized later
 		updateEffects: function(self, game) {
 			// Core #1: 2  ; Total:  2  ; Average: 2    =  8/4 = (3*1+5)/4
 			// Core #2: 3.5; Total:  5.5; Average: 2.75 = 11/4 = (3*2+5)/4
@@ -2218,8 +2210,7 @@ dojo.declare("classes.game.ui.RefineCatnipButton", com.nuclearunicorn.game.ui.Bu
 	    // -------------- x100 ----------------
 
 		if (!this.x100Href){
-			this.x100Href = this.addLink(this.model.x100Link.title, this.model.x100Link.handler
-				);
+			this.x100Href = this.addLink(this.model.x100Link);
 		} else {
 			dojo.style(this.x100Href.link, "display", !this.model.x100Link.visible ? "none" : "");
 		}
@@ -2406,8 +2397,7 @@ dojo.declare("classes.ui.btn.StagingBldBtn", com.nuclearunicorn.game.ui.Building
 
 		for (var i = 0; i < this.model.stageLinks.length; i++){
 			var linkModel = this.model.stageLinks[i];
-			this.stageLinks.push(
-					this.addLink(linkModel.title, linkModel.handler));
+			this.stageLinks.push(this.addLink(linkModel));
 		}
 	}
 });

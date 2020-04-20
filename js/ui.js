@@ -377,7 +377,7 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
 					dojo.style(cycleSpan, "paddingBottom", "4px");
 
 					var cycleSpan = dojo.create("div", {
-						innerHTML: "Cycle Effects:",
+						innerHTML: $I("cycle.effects.title") + ":",
 						style: { textAlign: "center", paddingTop: "4px"}
 					}, tooltip );
 
@@ -466,7 +466,12 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         this.update();
 
         //-------------------------
-        $(".console-intro").html($I("console.intro"));
+        var now = new Date();
+        if (now.getDate() == 1 && now.getMonth() == 3) {
+            $(".console-intro").css("font-size", "300%").addClass("blaze").text("You are a zebra in a savanna full of titanium mines.");
+        } else {
+            $(".console-intro").text($I("console.intro"));
+        }
 
         React.render($r(WLeftPanel, {
             game: this.game
@@ -661,6 +666,8 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         $("#hideSell")[0].checked = game.opts.hideSell;
         $("#hideBGImage")[0].checked = game.opts.hideBGImage;
         $("#enableRedshift")[0].checked = game.opts.enableRedshift;
+        $("#forceLZ")[0].checked = game.opts.forceLZ;
+        $("#compressSaveFile")[0].checked = game.opts.compressSaveFile;
         $("#disableTelemetry")[0].checked = game.opts.disableTelemetry;
         $("#noConfirm")[0].checked = game.opts.noConfirm;
         $("#IWSmelter")[0].checked = game.opts.IWSmelter;
@@ -950,7 +957,8 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
     save: function(){
         LCstorage["com.nuclearunicorn.kittengame.ui"] = JSON.stringify({
            fontSize: this.fontSize,
-           isChatVisited: this.isChatVisited
+           isChatVisited: this.isChatVisited,
+           theme: this.game.colorScheme
         });
     },
 

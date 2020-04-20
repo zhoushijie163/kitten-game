@@ -9,6 +9,12 @@ body {
     background-color: #FFFFFF;
 }
 
+img.loader {
+    -ms-interpolation-mode: bicubic;
+    width: 16px;
+    height: 16px;
+}
+
 #gamePageContainer {
     border: 0 none;
     font: inherit;
@@ -452,10 +458,6 @@ td.resLimitWarn, .res-cell.resLimitWarn  {
     padding: 10px 0px 10px 10px;
 }
 
-.btn.modern .linkBreak{
-    display: none;
-}
-
 .button_tooltip .noRes, .limited {
     color: #FF3030;
 }
@@ -637,6 +639,11 @@ h1 {
     text-decoration: none;
 }
 
+.right-tab {
+    height: calc(100% - 150px);
+    overflow-y: hidden;
+}
+
 #sorrowTooltip {
 	color: black;
 }
@@ -714,6 +721,11 @@ a:hover {
     padding-top: 4px;
     font-size: 15px;
     color: gray;
+}
+
+.tooltip-inner .desc.small {
+    font-size: 60%;
+    opacity: 0.8;
 }
 
 .links-block a{
@@ -857,14 +869,20 @@ a.link.collapse:hover {
     padding-left: 2px;
     padding-right: 2px;
     display:table-cell;
+    white-space: nowrap !important;
+
+    overflow-x: hidden;
+    text-overflow: ellipsis;
 }
 
 .res-cell.resource-name {
     width: 60px;
+    max-width: 85px;
 }
 
 .res-cell.resource-value {
     width: 75px;
+    max-width: 90px;
 }
 
 .res-cell.resPerTick {
@@ -882,6 +900,16 @@ a.link.collapse:hover {
 .res-cell.craft-link {
     cursor: pointer;
     width: 20px;
+    max-width: 60px;
+}
+
+.res-cell.craft-link .plusPrefix {
+    font-size: 80%;
+}
+
+.res-cell.craft-link.all{
+    font-size: 80%;
+    opacity: 0.4;
 }
 
 .res-cell.craft-link:hover {

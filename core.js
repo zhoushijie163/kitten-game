@@ -1033,12 +1033,12 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 	},
 
 	//Fast access snippet to create button links like "on", "off", "sell", etc.
-	addLink: function(title, handler, addBreak){
+	addLink: function(linkModel) {
 
-		var linkBreak = null;
 		var link = dojo.create("a", {
 				href: "#",
-				innerHTML: title,
+				innerHTML: linkModel.title,
+				className: linkModel.cssClass ? linkModel.cssClass : "",
 				style:{
 					paddingLeft: "2px",
 					float: "right",
@@ -1060,20 +1060,12 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 			})();
 
 
-		}, handler));
+		}, linkModel.handler));
 
-		if (addBreak){
-			linkBreak = dojo.create("span", {
-				innerHTML: "|",
-				className: "linkBreak",
-				style: {float: "right", paddingLeft: "2px"}
-			}, this.buttonContent);
-		}
 		dojo.place(link, this.buttonContent);
 
 		return {
 			link: link,
-			linkBreak: linkBreak,
 			linkHandler: linkHandler
 		};
 	},
@@ -1113,7 +1105,8 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 				display: "block",
 				float: "right"
 			},
-			innerHTML: links[0].title
+			innerHTML: links[0].title,
+			title: links[0].alt || links[0].title
 		}, linksDiv);
 
 		linksTooltip.style.left = link.offsetLeft;	//hack hack hack
@@ -1143,6 +1136,7 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 			var link = dojo.create("a", {
 				href: "#",
 				innerHTML: links[i].title,
+				title: links[i].alt || links[i].title,
 				className:"dropdown-link",
 				style:{
 					display: "block",
@@ -1405,6 +1399,14 @@ ButtonModernHelper = {
 			className: "desc"
 		}, tooltip);
 
+
+		if (model.metadata && model.metadata.isAutomationEnabled !== undefined){	//TODO: use proper metadata flag
+			var descDiv = dojo.create("div", {
+				innerHTML: model.metadata.isAutomationEnabled ? $I("btn.aon.tooltip") : $I("btn.aoff.tooltip"),
+				className: "desc small"
+			}, tooltip);
+		}
+
 		var prices = model.priceModels;
 		var effects = model.effectModels;
 		var flavor = model.flavor;
@@ -1543,8 +1545,6 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 		}
 	},
 
-
-
 	attachTooltip: function(container, htmlProvider){
 		var tooltip = dojo.byId("tooltip");
 		var btn = this;
@@ -1592,6 +1592,15 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 		//do nothing, implement me
 	},
 
+	updateLink: function(buttonLink, modelLink) {
+		if (buttonLink) {
+			buttonLink.link.textContent = modelLink.title;
+			if (modelLink.cssClass) buttonLink.link.className = modelLink.cssClass;
+			if (modelLink.tooltip) buttonLink.link.title = modelLink.tooltip;
+			dojo.style(buttonLink.link, "display", modelLink.visible === undefined || modelLink.visible ? "" : "none");
+		}
+	},
+
 	getSelectedObject: function(){
 		return this.model;
 	}
@@ -1623,9 +1632,7 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtnController", com.nuclearunic
 			model.togglableOnOffLink = {
 				title:  model.metadata.on ? $I("btn.on.minor") : $I("btn.off.minor"),
 				tooltip: model.metadata.on ? $I("btn.on.tooltip") : $I("btn.off.tooltip"),
-				visible: true,
-				enabled: true,
-				divider: true,
+				cssClass: model.metadata.on ? "bld-on" : "bld-off",
 				handler: function(btn){
 					self.handleTogglableOnOffClick(model);
 				}
@@ -1635,9 +1642,7 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtnController", com.nuclearunic
 			model.toggleAutomationLink = {
 				title: model.metadata.isAutomationEnabled ? "A" : "*",
 				tooltip: model.metadata.isAutomationEnabled ? $I("btn.aon.tooltip") : $I("btn.aoff.tooltip"),
-				visible: this.game.workshop.get("factoryAutomation").researched,
-				enabled: true,
-				divider: true,
+				cssClass: model.metadata.isAutomationEnabled ? "auto-on" : "auto-off",
 				handler: function(btn){
 					self.handleToggleAutomationLinkClick(model);
 				}
@@ -1827,10 +1832,12 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtn", com.nuclearunicorn.game.u
 		//var sellLinkAdded = false;
 		if (this.model.showSellLink){
 			if (!this.sellHref){
-				this.sellHref = this.addLink($I("btn.sell.minor"),
-					function(event){
+				this.sellHref = this.addLink({
+					title: $I("btn.sell.minor"),
+					handler: function(event) {
 						this.sell(event);
-					});
+					}
+				});
 				//var sellLinkAdded = true;
 			}
 		}
@@ -1894,17 +1901,12 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtn", com.nuclearunicorn.game.u
 		}
 
 		if (this.model.togglableOnOffLink){
-			this.toggle = this.addLink( this.model.togglableOnOffLink.title,
-				this.model.togglableOnOffLink.handler, this.model.togglableOnOffLink.divider	//use | break
-			);
+			this.toggle = this.addLink(this.model.togglableOnOffLink);
 		}
 
 		if (this.model.toggleAutomationLink){
-			this.toggleAutomation = this.addLink( this.model.toggleAutomationLink.title,
-				this.model.toggleAutomationLink.handler, this.model.toggleAutomationLink.divider	//use | break
-			);
+			this.toggleAutomation = this.addLink(this.model.toggleAutomationLink);
 		}
-
 	},
 
 	sell: function(event){
@@ -1947,16 +1949,8 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtn", com.nuclearunicorn.game.u
 				dojo.toggleClass(this.add["add1"].link, "enabled", building.on < building.val);
 			}
 
-			if (this.toggle){
-				this.toggle.link.textContent = this.model.togglableOnOffLink.title;
-				this.toggle.link.title = this.model.togglableOnOffLink.tooltip;
-			}
-
-			if (this.toggleAutomation){
-				this.toggleAutomation.link.textContent = this.model.toggleAutomationLink.title;
-				this.toggleAutomation.link.title = this.model.toggleAutomationLink.tooltip;
-			}
-
+			this.updateLink(this.toggle, this.model.togglableOnOffLink);
+			this.updateLink(this.toggleAutomation, this.model.toggleAutomationLink);
 		}
 	}
 });

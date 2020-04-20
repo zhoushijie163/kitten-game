@@ -130,6 +130,7 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 		value: 0,
 		unlocked: false
 	}],
+	jobNames: null,
 
 	//resource modifiers per tick
 	resourceModifiers: {
@@ -214,6 +215,10 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 		this.sim = new classes.village.KittenSim(game);
 		this.map = new classes.village.Map(game);
 
+		this.jobNames = [];
+		for (var i = 0; i < this.jobs.length; ++i) {
+			this.jobNames.push(this.jobs[i].name);
+		}
 		this.senators = [];
 		this.traits = [];
 	},
@@ -544,7 +549,7 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 	save: function(saveData){
 		var kittens = [];
 		for (var i in this.sim.kittens){
-			var _kitten = this.sim.kittens[i].save();
+			var _kitten = this.sim.kittens[i].save(this.game.opts.compressSaveFile, this.jobNames);
 			kittens.push(_kitten);
 		}
 
@@ -552,7 +557,7 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 			kittens : kittens,
 			maxKittens: this.maxKittens,
 			jobs: this.filterMetadata(this.jobs, ["name", "unlocked", "value"]),
-			map : this.map.villageData
+			//map : this.map.villageData
 		};
 	},
 
@@ -571,7 +576,7 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 				var kitten = kittens[i];
 
 				var newKitten = new com.nuclearunicorn.game.village.Kitten();
-				newKitten.load(kitten);
+				newKitten.load(kitten, this.jobNames);
 
 				if (this.game.village.traits.indexOf(newKitten.trait) < 0) {
 					this.game.village.traits.unshift(newKitten.trait);
@@ -590,9 +595,9 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 			this.maxKittens  = saveData.village.maxKittens;
 			this.loadMetadata(this.jobs, saveData.village.jobs);
 
-			if (saveData.village.map){
+			/*if (saveData.village.map){
 				this.map.villageData = saveData.village.map;
-			}
+			}*/
 		}
 
 		this.updateResourceProduction();
@@ -895,25 +900,25 @@ dojo.declare("com.nuclearunicorn.game.village.Kitten", null, {
 		this.skills = {};
 	},
 
-	getTrait: function(name){
-		for (var i = this.traits.length - 1; i >= 0; i--) {
-			if (this.traits[i].name === name){
-				return this.traits[i];
-			}
-		}
-	},
-
 	rand: function(ratio){
 		return (Math.floor(Math.random()*ratio));
 	},
 
-	load: function(data){
+	load: function(data, jobNames) {
+		if (data.ssn != undefined) {
+			this.loadCompressed(data, jobNames);
+		} else {
+			this.loadUncompressed(data);
+		}
+	},
+
+	loadUncompressed: function(data) {
 		this.name = 	data.name;
 		this.surname =  data.surname;
 		this.age = 		data.age;
 		this.skills = 	data.skills;
 		this.exp = 		data.exp || 0;
-		this.trait = 	this.getTrait(data.trait.name); //load trait, getting current trait.title
+		this.trait = 	this.traits[this._getTraitIndex(data.trait.name)]; //load trait, getting current trait.title
 		this.job = 		data.job;
 		this.engineerSpeciality = data.engineerSpeciality || null;
 		this.rank =		data.rank || 0;
@@ -927,7 +932,48 @@ dojo.declare("com.nuclearunicorn.game.village.Kitten", null, {
 		}
 	},
 
-	save: function(){
+	loadCompressed: function(data, jobNames) {
+		var ssn = this._splitValues(data.ssn, 4, 100);
+		this.name = this.names[ssn[0]];
+		this.surname = this.surnames[ssn[1]];
+		this.age = ssn[2];
+		this.trait = this.traits[ssn[3]];
+
+		this.skills = {};
+		var dataSkills = data.skills || 0;
+		var sameSkill = typeof(dataSkills) == "number";
+		for (var i = jobNames.length - 1; i >= 0; --i) {
+			var skill = sameSkill ? dataSkills : (dataSkills[i] || 0);
+			if (skill > 20001) {
+				skill = 20001;
+			}
+			this.skills[jobNames[i]] = skill;
+		}
+
+		this.exp = data.exp || 0;
+		this.job = data.job != undefined ? jobNames[data.job] : null;
+		this.engineerSpeciality = data.engineerSpeciality || null;
+		this.rank = data.rank || 0;
+		this.isLeader = data.isLeader || false;
+		this.isSenator = false;
+	},
+
+	_splitValues: function(mergedResult, numberOfValues, shift) {
+		var values = [];
+		for (var i = 0; i < numberOfValues; ++i) {
+			var value = mergedResult % shift;
+			mergedResult -= value;
+			mergedResult /= shift;
+			values.push(value);
+		}
+		return values;
+	},
+
+	save: function(compress, jobNames) {
+		return compress ? this.saveCompressed(jobNames) : this.saveUncompressed();
+	},
+
+	saveUncompressed: function() {
 		//only save positive job skills to reduce save code size
 		var saveSkills = {};
 		for (var job in this.skills){
@@ -935,18 +981,62 @@ dojo.declare("com.nuclearunicorn.game.village.Kitten", null, {
 				saveSkills[job] = this.skills[job];
 			}
 		}
+		// don't serialize falsy values
 		return {
 			name: this.name,
 			surname: this.surname,
 			age: this.age,
 			skills: saveSkills,
-			exp: this.exp,
+			exp: this.exp || undefined,
 			trait: {name: this.trait.name},
-			job: this.job || null,
-			engineerSpeciality: this.engineerSpeciality || undefined, //don't serialize when falsy
-			rank: this.rank,
-			isLeader: this.isLeader || undefined //ditto
+			job: this.job || undefined,
+			engineerSpeciality: this.engineerSpeciality || undefined,
+			rank: this.rank || undefined,
+			isLeader: this.isLeader || undefined
 		};
+	},
+
+	saveCompressed: function(jobNames) {
+		var skills = [];
+		var minSkill = Number.MAX_VALUE;
+		var maxSkill = -minSkill;
+		for (var i = 0; i < jobNames.length; ++i) {
+			var skill = this.skills[jobNames[i]] || 0;
+			skills[i] = skill;
+			minSkill = Math.min(skill, minSkill);
+			maxSkill = Math.max(skill, maxSkill);
+		}
+		if (minSkill == maxSkill) {
+			skills = maxSkill;
+		}
+
+		// don't serialize falsy values
+		return {
+			ssn: this._mergeValues([this.names.indexOf(this.name), this.surnames.indexOf(this.surname), this.age, this._getTraitIndex(this.trait.name)], 100),
+			skills: skills || undefined,
+			exp: this.exp || undefined,
+			job: this.job ? jobNames.indexOf(this.job) : undefined,
+			engineerSpeciality: this.engineerSpeciality || undefined,
+			rank: this.rank || undefined,
+			isLeader: this.isLeader || undefined
+		};
+	},
+
+	_mergeValues: function(values, shift) {
+		var result = 0;
+		for (var i = values.length - 1; i >= 0; --i) {
+			result *= shift;
+			result += values[i];
+		}
+		return result;
+	},
+
+	_getTraitIndex: function(name) {
+		for (var i = this.traits.length - 1; i >= 0; i--) {
+			if (this.traits[i].name === name) {
+				return i;
+			}
+		}
 	}
 });
 
@@ -1306,16 +1396,11 @@ dojo.declare("classes.village.KittenSim", null, {
 
 	},
 
-	addKitten: function(amount){
-		if (!amount) {
-			amount = 1;
-		}
-		for (var i = amount - 1; i >= 0; i--) {
-			var kitten = new com.nuclearunicorn.game.village.Kitten();
-			this.kittens.push(kitten);
-			if (this.game.village.traits.indexOf(kitten.trait) < 0) {
-				this.game.village.traits.unshift(kitten.trait);
-			}
+	addKitten: function() {
+		var kitten = new com.nuclearunicorn.game.village.Kitten();
+		this.kittens.push(kitten);
+		if (this.game.village.traits.indexOf(kitten.trait) < 0) {
+			this.game.village.traits.unshift(kitten.trait);
 		}
 		this.game.villageTab.updateTab();
 
@@ -1323,7 +1408,7 @@ dojo.declare("classes.village.KittenSim", null, {
             this.game.kongregate.stats.submit("kittens", this.kittens.length);
         }
 
-        this.game.stats.getStat("totalKittens").val += amount;
+        this.game.stats.getStat("totalKittens").val++;
 	},
 
 	killKittens: function(amount){
@@ -1696,6 +1781,7 @@ dojo.declare("com.nuclearunicorn.game.ui.JobButtonController", com.nuclearunicor
 		  {
 				id: "unassign",
 				title: "[&ndash;]",
+				alt: "minus",
 				handler: function(){
 					self.unassignJobs(model, 1);
 				}
@@ -1723,6 +1809,7 @@ dojo.declare("com.nuclearunicorn.game.ui.JobButtonController", com.nuclearunicor
 			{
 				id: "assign",
 				title: "[+]",
+				alt: "plus",
 				handler: function(){
 					self.assignJobs(model, 1);
 				}
@@ -2231,8 +2318,8 @@ dojo.declare("classes.village.ui.FestivalButtonController", classes.village.ui.V
 
 dojo.declare("classes.village.ui.FestivalButton", com.nuclearunicorn.game.ui.ButtonModern, {
 	renderLinks: function() {
-		this.x100 = this.addLink(this.model.x100Link.title, this.model.x100Link.handler, false);
-		this.x10 = this.addLink(this.model.x10Link.title, this.model.x10Link.handler, false);
+		this.x100 = this.addLink(this.model.x100Link);
+		this.x10 = this.addLink(this.model.x10Link);
 	},
 
 	update: function() {
@@ -2474,7 +2561,8 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Village", com.nuclearunicorn.game.u
 
 		if (this.happinessStats){
 			var happiness = this.game.village.happiness * 100;
-			this.happinessStats.innerHTML = $I("village.census.lbl.happiness") + ":  " + Math.floor(happiness) + "%";
+			var happinessVal = happiness < 10000 ? Math.floor(happiness) : this.game.getDisplayValueExt(happiness);
+			this.happinessStats.innerHTML = $I("village.census.lbl.happiness") + ":  " + happinessVal + "%";
 		}
 
 		var festivalDays = this.game.calendar.festivalDays;
