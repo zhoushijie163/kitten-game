@@ -99,7 +99,8 @@ img.loader {
 }
 
 #rightColumn {
-    width: 250px;
+    min-width: 250px;
+    max-width: 400px;
     vertical-align: top;
     padding-left: 8px;
     top: 20px;
@@ -225,6 +226,15 @@ select>option {
     text-overflow: ellipsis;
     display: inline-block;
 }
+
+.btn .btnContent a.small {
+    font-size: 0.7em;
+    line-height: 16px;
+}
+
+/*.btn .btnContent .btnTitle {
+
+}*/
 
 .btn.small-text span {
     font-size: 90%;
@@ -557,19 +567,24 @@ label:hover {
     opacity: 0.7;
 }
 
-input[type="checkbox"] {
+#optionsDiv {
+    height: auto;
+    margin-top:-170px; 
+}
+
+#optionsDiv input[type="checkbox"] {
 	display: none;
 }
 
-input[type="checkbox"] + label:before {
-	content: "x";
+#optionsDiv input[type="checkbox"] + label:before {
+    content: "·";
 	display: inline-block;
 	font: 16px sans-serif;
 	margin: 0px 6px 0px 2px;
 }
 
-input[type="checkbox"]:checked + label:before {
-	content: "\2713";
+#optionsDiv input[type="checkbox"]:checked + label:before {
+	content: "v";
 	font: 12px sans-serif;
 }
 
@@ -628,15 +643,33 @@ h1 {
 }
 
 .right-tab-header {
-    padding: 5px;
+    margin-top: 10px;
 }
 
 .right-tab-header a {
     padding: 5px;
+    padding-left: 30px;
+    padding-right: 30px;
 }
 
 .right-tab-header a.active {
     text-decoration: none;
+    border-top: 1px solid rgba(128,128,128, 0.4);
+
+    /*Looks a bit visually noisy - vvv*/
+
+    /*border-right: 1px solid rgba(128,128,128, 0.4);
+    border-left: 1px solid rgba(128,128,128, 0.4);*/
+}
+.right-tab-header a:not(.active) {
+    text-decoration: none;
+    /*border-bottom: 1px solid lightgray;*/
+}
+
+#observeButton {
+    text-align: center; 
+    margin-top: 15px; 
+    height: 30px;
 }
 
 .right-tab {
@@ -836,12 +869,17 @@ a.link.collapse:hover {
 
 .res-toolbar {
     display: inline-block;
+    user-select: none;
 }
 
 .res-toolbar.right {
     text-align: right;
     margin-right:-18px;
     float: right;
+}
+
+.res-toolbar .link.toggled {
+    color: darkred;
 }
 
 .res-toolbar.left {
@@ -908,7 +946,7 @@ a.link.collapse:hover {
 }
 
 .res-cell.craft-link.all{
-    font-size: 80%;
+    font-size: 85%;
     opacity: 0.4;
 }
 
@@ -943,6 +981,43 @@ a.link.collapse:hover {
     height: 250px;
     padding: 20px;
 }
+
+/*--------------------------------------
+                Village
+---------------------------------------*/
+
+.census-block {
+    border: 1px solid gray;
+	margin-bottom: 5px;
+	padding: 5px;
+	min-height: 80px;
+}
+
+
+.census-block .info {
+    padding-bottom: 5px;
+}
+
+.census-block .skill{
+    font-size: 0.8em;
+}
+   
+.name.color-brown {
+    color:#856341;
+}
+.name.color-cream {
+    color:lightcoral;
+}
+.name.color-black {
+    color:darkgrey;
+}
+.name.color-fawn {
+    color:gainsboro;
+}
+.name.color-white {
+    color:floralwhite
+}
+
 
 /*--------------------------------------
                 Map

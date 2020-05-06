@@ -77,31 +77,31 @@ dojo.declare("classes.game.Telemetry", [mixin.IDataStorageAware], {
 	guid: null,
 	game: null,
 
-	constructor: function(game){
+	constructor: function(game) {
 		this.guid = this.generateGuid();
 		this.game = game;
 	},
 
-	generateGuid: function(){
+	// See https://www.ietf.org/rfc/rfc4122.txt, section 4.4
+	generateGuid: function() {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-			var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-			return v.toString(16);
+			return (c == 'x' ? 16 * Math.random() | 0 : 4 * Math.random() | 8).toString(16);
 		});
 	},
 
-	save: function(data){
+	save: function(data) {
 		data["telemetry"] = {
 			guid: this.guid
 		};
 	},
 
-	load: function(data){
-		if (data["telemetry"]){
+	load: function(data) {
+		if (data["telemetry"]) {
 			this.guid = data["telemetry"].guid || this.generateGuid();
 		}
 	},
 
-	logEvent: function(eventType, payload){
+	logEvent: function(eventType, payload) {
 		var event = {
 			guid: this.guid,
 			type: eventType,
@@ -1476,6 +1476,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this.village.save(saveData);
 		this.calendar.save(saveData);
 		this.console.save(saveData);
+		this.telemetry.save(saveData);
 
         for (var i in this.managers){
             this.managers[i].save(saveData);
@@ -1500,7 +1501,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		//5mb limit workaround
 		if (saveDataString.length > 5000000 || this.opts.forceLZ) {
 			console.log("compressing the save file...");
-			saveDataString = this.compressLZData(saveDataString);	
+			saveDataString = this.compressLZData(saveDataString);
 		}
 
 		LCstorage["com.nuclearunicorn.kittengame.savedata"] = saveDataString;
@@ -1585,7 +1586,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			data = this.decompressLZData(localStorageData);
 		}
 		var saveData = JSON.parse(data);
-		
+
 		console.log("Parse complete, data:", data, "saveData:", saveData);
 		return saveData;
 	},
@@ -1618,6 +1619,7 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				this.village.load(saveData);
 				this.calendar.load(saveData);
 				this.console.load(saveData);
+				this.telemetry.load(saveData);
 				this.ui.renderFilters();
 
                 for (var i in this.managers){
@@ -2683,42 +2685,37 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		return 0;
 	},
 
-	getCraftRatio: function() {
-		return this.getEffect("craftRatio") + this.village.getEffectLeader("engineer", 0);
+	getCraftRatio: function(tag) {
+		return this.getEffect("craftRatio") + this.village.getEffectLeader("engineer", 0) + this.village.getEffectLeader(tag, 0);
 	},
 
-	getResCraftRatio: function(res){
-		if (res.name == "wood"){
+	getResCraftRatio: function(craftedResName) {
+		if (craftedResName == "wood") {
 			var refineRatio = this.getEffect("refineRatio");
-			if (this.ironWill){
-				return ( (1 + refineRatio) * (1 + this.getEffect("woodRatio")) ) - 1;
-			} else {
-				return refineRatio;
-			}
+			return this.ironWill
+				? ((1 + refineRatio) * (1 + this.getEffect("woodRatio"))) - 1
+				: refineRatio;
 		}
 
-		var ratio = this.getCraftRatio();
+		var ratio = this.getCraftRatio(this.resPool.get(craftedResName).tag);
 
-		if (res.name == "blueprint"){
+		if (craftedResName == "blueprint") {
 			var bpRatio = this.getEffect("cadBlueprintCraftRatio");
-			var scienceBldAmt = this.bld.get("library").val + this.bld.get("academy").val +
-				this.bld.get("observatory").val + this.bld.get("biolab").val;
-
+			var scienceBldAmt = this.bld.get("library").val + this.bld.get("academy").val + this.bld.get("observatory").val + this.bld.get("biolab").val;
 			ratio += scienceBldAmt * bpRatio;
 		}
 
-		if (res.name == "kerosene"){
-			var fRatio = this.getEffect("factoryRefineRatio");
-
+		if (craftedResName == "kerosene") {
+			var fRatio = 0.75 * this.getEffect("factoryRefineRatio");	//25% penalty
 			var amt = this.bld.get("factory").on;
-
-			ratio *= (1 + amt * fRatio * 0.75);	//25% penalty
+			ratio *= 1 + amt * fRatio;
 		}
 
-        //get resource specific craft ratio (like factory bonus)
-        var resCraftRatio = this.getEffect(res.name + "CraftRatio") || 0;
+		//get resource specific craft ratio (like factory bonus)
+		ratio += this.getEffect(craftedResName + "CraftRatio") || 0;
+		ratio *= 1 + this.getEffect(craftedResName + "GlobalCraftRatio") || 0;
 
-		return (ratio + resCraftRatio) * (1 + ( this.getEffect(res.name + "GlobalCraftRatio") || 0 ));
+		return ratio;
 	},
 
 	/**
@@ -3637,7 +3634,10 @@ dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			},
 			achievements: lsData.achievements,
 			stats: stats,
-			statsCurrent: statsCurrent
+			statsCurrent: statsCurrent,
+			telemetry: {
+				guid: this.telemetry.guid
+			}
 		};
 
 		if (anachronomancy.researched){

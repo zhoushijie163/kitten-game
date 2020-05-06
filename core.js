@@ -900,7 +900,7 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 		//		a bit hackish place for price highlight
 		//---------------------------------------------------
 		//---- now highlight some stuff in vanilla js way ---
-		this.buttonTitle.className = this.model.resourceIsLimited ? "limited" : "";
+		this.buttonTitle.className = "btnTitle" + (this.model.resourceIsLimited ? " limited" : "");
 	},
 
 	update: function() {
@@ -941,6 +941,7 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 
 		this.buttonTitle = dojo.create("span", {
 			innerHTML: this.model.name,
+			className: "btnTitle",
 			style: {}
 		}, this.buttonContent);
 
@@ -1035,10 +1036,11 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 	//Fast access snippet to create button links like "on", "off", "sell", etc.
 	addLink: function(linkModel) {
 
+		var longTitleClass = (linkModel.title.length > 4) ? "small" : "";
 		var link = dojo.create("a", {
 				href: "#",
 				innerHTML: linkModel.title,
-				className: linkModel.cssClass ? linkModel.cssClass : "",
+				className: longTitleClass + (linkModel.cssClass ? (" " + linkModel.cssClass) : ""),
 				style:{
 					paddingLeft: "2px",
 					float: "right",
@@ -1101,6 +1103,7 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 		//------------- root href --------------
 		var link = dojo.create("a", {
 			href: "#",
+			className: links[0].id ? (links[0].id + "Link") : "",
 			style: {
 				display: "block",
 				float: "right"
@@ -1226,7 +1229,7 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModernController", com.nuclearuni
 		if (!hasRes && res.craftable && !simpleUI && res.name != "wood"){
 			var craft = this.game.workshop.getCraft(res.name);
 			if (craft.unlocked) {
-				var craftRatio = this.game.getResCraftRatio(res);
+				var craftRatio = this.game.getResCraftRatio(res.name);
 				result.title = "+ " + result.title;
 				result.children = [];
 
@@ -1297,7 +1300,7 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModernController", com.nuclearuni
 			//display resMax values with global ratios like Refrigeration and Paragon
 			if (effectName.substr(-3) === "Max") {
 				var res = this.game.resPool.get(effectMeta.resName || effectName.slice(0, -3));
-				if (res != false) { // If res is a resource and not just a variable
+				if (res) { // If res is a resource and not just a variable
 					effectValue = this.game.resPool.addResMaxRatios(res, effectValue);
 				}
 			}
@@ -1353,20 +1356,18 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModernController", com.nuclearuni
 		}
 	},
 
-	_precraftRes: function(price){
-		if (price.children){
-			for (var i in price.children){
+	_precraftRes: function(price) {
+		if (price.children) {
+			for (var i in price.children) {
 				this._precraftRes(price.children[i]);
 			}
 		}
 
 		var res = this.game.resPool.get(price.name);
-		if (res.craftable && res.name != "wood" && this.game.workshop.getCraft(price.name).unlocked){
-
-			var ratio = this.game.getResCraftRatio(res);
+		if (res.craftable && res.name != "wood" && this.game.workshop.getCraft(res.name).unlocked) {
 			var amt = price.val - res.value;
-			if (amt > 0){
-				var baseAmt = amt / ratio;
+			if (amt > 0) {
+				var baseAmt = amt / (1 + this.game.getResCraftRatio(res.name));
 				this.game.workshop.craft(res.name, baseAmt, false /*no undo*/, true /*force all*/);
 			}
 		}
@@ -1403,7 +1404,7 @@ ButtonModernHelper = {
 		if (model.metadata && model.metadata.isAutomationEnabled !== undefined){	//TODO: use proper metadata flag
 			var descDiv = dojo.create("div", {
 				innerHTML: model.metadata.isAutomationEnabled ? $I("btn.aon.tooltip") : $I("btn.aoff.tooltip"),
-				className: "desc small"
+				className: "desc small" + (model.metadata.isAutomationEnabled ? " auto-on" : " auto-off")
 			}, tooltip);
 		}
 
@@ -1839,6 +1840,7 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingBtn", com.nuclearunicorn.game.u
 					}
 				});
 				//var sellLinkAdded = true;
+				dojo.addClass(this.domNode, "hasSellLink");
 			}
 		}
 

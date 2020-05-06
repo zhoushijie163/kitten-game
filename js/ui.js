@@ -286,7 +286,7 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             var tabLink = dojo.create("a", {
                 href:"#",
                 innerHTML: tab.tabName,
-                className: "tab",
+                className: "tab " + tab.tabId,
                 style : {
                     whiteSpace: "nowrap"
                 }
@@ -313,14 +313,13 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             }
         }
 
-
         for (var i = 0; i < game.tabs.length; i++){
             var tab = game.tabs[i];
 
             if (this.activeTabId == tab.tabId){
 
                 var divContainer = dojo.create("div", {
-                    className: "tabInner"
+                    className: "tabInner " + tab.tabId
                 }, container);
 
                 tab.render(divContainer);
@@ -494,7 +493,8 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             this.game.tooltipUpdateFunc();
         }
 
-        $(".chatLink").css("font-weight", this.isChatVisited ? "normal" : "bold");
+        //not relevant anymore
+        //$(".chatLink").css("font-weight", this.isChatVisited ? "normal" : "bold");
 
         //wat
         /*React.render($r(WLeftPanel, {
@@ -511,7 +511,29 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
 			if (tab.tabId == this.activeTabId){
 				tab.update();
 			}
-		}
+        }
+        if (this.game.village.leader) {
+            dojo.query("a.tab.traitLeaderBonus").removeClass("traitLeaderBonus");
+            switch (this.game.village.leader.trait.name) {
+                case "engineer": // Crafting bonuses
+                case "metallurgist":
+                case "chemist":
+                    dojo.query("a.tab.Workshop").addClass("traitLeaderBonus");
+                    break;
+                case "merchant": // Trading bonus
+                    dojo.query("a.tab.Trade").addClass("traitLeaderBonus");
+                    break;
+                case "manager": // Hunting bonus
+                    dojo.query("a.tab.Village").addClass("traitLeaderBonus");
+                    break;
+                case "scientist": // Science prices bonus
+                    dojo.query("a.tab.Science").addClass("traitLeaderBonus");
+                    break;
+                case "wise": // Religion bonus
+                    dojo.query("a.tab.Religion").addClass("traitLeaderBonus");
+                    break;
+                }
+        }
 	},
 
     updateFastHunt: function(){
@@ -776,7 +798,7 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         //swfobject.embedSWF("lib/lightirc/lightIRC.swf", $chat[0], 600, height - 150, 10, "lib/lightirc/expressInstall.swf", params);
         /*<iframe src="https://kiwiirc.com/client/irc.canternet.org/?nick=kitten_?#kittensgame" style="border:0; width:100%; height:450px;"></iframe>*/
         this.isChatActive = true;
-        this.isChatVisited = true;
+        //this.isChatVisited = true;
     },
 
     resetConsole: function(){
